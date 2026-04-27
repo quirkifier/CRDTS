@@ -6,11 +6,10 @@
 #include <unordered_map>
 #include <vector>
 class GC_Counter {
-private:
+public:
   std::string nodeID;
   std::unordered_map<std::string, int> state;
 
-public:
   GC_Counter(const std::string &node_id) : nodeID(node_id) {}
   void increment() { state[nodeID]++; }
   int sum_all() const {
@@ -70,4 +69,30 @@ public:
   }
 };
 
+class PNCounter {
+private:
+  GC_Counter P;
+  GC_Counter N;
+
+public:
+  PNCounter(const std::string &nodeId) : P(nodeId), N(nodeId) {}
+
+  void increment() { P.increment(); }
+
+  void decrement() { N.increment(); }
+
+  int value() const { return P.sum_all() - N.sum_all(); }
+
+  void merge(const PNCounter &other) {
+    P.merge(other.P);
+    N.merge(other.N);
+  }
+
+  void inspect() const {
+    std::cout << "Node: " << P.nodeID << "\n";
+    std::cout << "P: " << P.sum_all() << "\n";
+    std::cout << "N: " << N.sum_all() << "\n";
+    std::cout << "Value (P - N): " << value() << "\n";
+  }
+};
 #endif
