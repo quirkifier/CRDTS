@@ -20,7 +20,7 @@ public:
     return total;
   }
   void merge(const GC_Counter &other) {
-    for (auto &[id, count] : other.state) {
+    for (const auto &[id, count] : other.state) {
       state[id] = std::max(state[id], count);
     }
   }

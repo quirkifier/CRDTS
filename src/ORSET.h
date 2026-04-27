@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <utility>
 using namespace std;
 
 class ORSet
@@ -13,22 +14,14 @@ private:
     set<pair<string, string>> added;
     set<pair<string, string>> removed;
 
-    void updateCounterFromTags() 
+    void processIncomingTag(const string& tag)
     {
-        for (auto item : added) 
+        size_t colonPos = tag.find(":");
+        if (colonPos != string::npos)
         {
-            string tag = item.second;
-            int colonPos = tag.find(":");
-
-            if (colonPos == -1)
-            {
-                continue;
-            }
-
             string id = tag.substr(0, colonPos);
             int num = stoi(tag.substr(colonPos + 1));
-
-            if (id == nodeId) 
+            if (id == nodeId)
             {
                 counter = max(counter, num);
             }
@@ -77,17 +70,16 @@ public:
 
     void merge(const ORSet& other) 
     {
-        for (auto item : other.added) 
+        for (const auto& item : other.added) 
         {
             added.insert(item);
+            processIncomingTag(item.second);
         }
 
-        for (auto item : other.removed)
+        for (const auto& item : other.removed)
         {
             removed.insert(item);
         }
-
-        updateCounterFromTags();
     }
 
     bool equals(const ORSet& other) const 
@@ -103,13 +95,13 @@ public:
         ss << counter << "\n";
 
         ss << added.size() << "\n";
-        for (auto item : added) 
+        for (const auto& item : added) 
         {
             ss << item.first << "|" << item.second << "\n";
         }
 
         ss << removed.size() << "\n";
-        for (auto item : removed) 
+        for (const auto& item : removed) 
         {
             ss << item.first << "|" << item.second << "\n";
         }
@@ -125,44 +117,40 @@ public:
         string line;
         int counter;
 
-        getline(ss, nodeId);
-        getline(ss, line);
+        if (!getline(ss, nodeId)) return ORSet("");
+        if (!getline(ss, line)) return ORSet(nodeId);
         counter = stoi(line);
 
         ORSet obj(nodeId);
         obj.counter = counter;
 
         int addedSize;
-        getline(ss, line);
-        addedSize = stoi(line);
-
-        for (int i = 0; i < addedSize; i++) 
-        {
-            getline(ss, line);
-
-            int sep = line.find("|");
-            string element = line.substr(0, sep);
-            string tag = line.substr(sep + 1);
-
-            obj.added.insert({ element, tag });
+        if (getline(ss, line)) {
+            addedSize = stoi(line);
+            for (int i = 0; i < addedSize; i++) 
+            {
+                if (!getline(ss, line)) break;
+                int sep = line.find("|");
+                string element = line.substr(0, sep);
+                string tag = line.substr(sep + 1);
+                obj.added.insert({ element, tag });
+                obj.processIncomingTag(tag);
+            }
         }
 
         int removedSize;
-        getline(ss, line);
-        removedSize = stoi(line);
-
-        for (int i = 0; i < removedSize; i++) 
-        {
-            getline(ss, line);
-
-            int sep = line.find("|");
-            string element = line.substr(0, sep);
-            string tag = line.substr(sep + 1);
-
-            obj.removed.insert({ element, tag });
+        if (getline(ss, line)) {
+            removedSize = stoi(line);
+            for (int i = 0; i < removedSize; i++) 
+            {
+                if (!getline(ss, line)) break;
+                int sep = line.find("|");
+                string element = line.substr(0, sep);
+                string tag = line.substr(sep + 1);
+                obj.removed.insert({ element, tag });
+            }
         }
 
-        obj.updateCounterFromTags();
         return obj;
     }
 

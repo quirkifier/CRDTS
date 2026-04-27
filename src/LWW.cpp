@@ -27,14 +27,16 @@ public:
   void set(string new_value, string id) {
     long long new_time = get_time_ms();
 
-    if (new_time > timestamp || (new_time == timestamp && id > node_id)) {
+    // Fix: If it's the same node, we always accept the update if the time is >= current.
+    // This handles multiple updates within the same millisecond from the same node.
+    if (new_time > timestamp || (new_time == timestamp && id >= node_id)) {
       value = new_value;
       timestamp = new_time;
       node_id = id;
     }
   }
 
-  void merge(LWW_Register other) {
+  void merge(const LWW_Register& other) {
     if (other.timestamp > timestamp ||
         (other.timestamp == timestamp && other.node_id > node_id)) {
       value = other.value;
