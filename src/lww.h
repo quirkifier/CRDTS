@@ -17,7 +17,7 @@ public:
 
     static long long get_current_time_ms() {
         return std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::system_clock::now().time_since_epoch())
+            std::chrono::system_clock::now().time_since_epoch())
             .count();
     }
 
@@ -53,7 +53,7 @@ public:
     static LWWRegister deserialize(const std::string& data) {
         std::stringstream ss(data);
         std::string node_id, ts_str, value;
-        
+
         std::getline(ss, node_id, '|');
         std::getline(ss, ts_str, '|');
         std::getline(ss, value);
@@ -65,9 +65,9 @@ public:
     }
 
     void inspect() const {
-        std::cout << "LWWRegister Node: " << node_id 
-                  << " Value: " << value 
-                  << " Timestamp: " << timestamp << std::endl;
+        std::cout << "LWWRegister Node: " << node_id
+            << " Value: " << value
+            << " Timestamp: " << timestamp << std::endl;
     }
 };
 

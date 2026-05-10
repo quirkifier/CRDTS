@@ -5,130 +5,209 @@
 #include <set>
 #include <string>
 #include <sstream>
-#include <algorithm>
 #include <utility>
 
 class ORSet {
 private:
     std::string nodeId;
     int counter;
+
     std::set<std::pair<std::string, std::string>> added;
     std::set<std::pair<std::string, std::string>> removed;
 
     void processIncomingTag(const std::string& tag) {
         size_t colonPos = tag.find(":");
-        if (colonPos != std::string::npos) {
-            std::string id = tag.substr(0, colonPos);
-            try {
-                int num = std::stoi(tag.substr(colonPos + 1));
-                if (id == nodeId) {
-                    counter = std::max(counter, num);
+
+        if (colonPos == std::string::npos) {
+            return;
+        }
+
+        std::string id = tag.substr(0, colonPos);
+        std::string numberPart = tag.substr(colonPos + 1);
+
+        try {
+            int num = std::stoi(numberPart);
+
+            if (id == nodeId) {
+                if (counter < num) {
+                    counter = num;
                 }
-            } catch (...) {}
+            }
+        }
+        catch (...) {
+            return;
         }
     }
 
 public:
-    ORSet(const std::string& id = "") : nodeId(id), counter(0) {}
+    ORSet(const std::string& id = "") {
+        nodeId = id;
+        counter = 0;
+    }
 
     void add(const std::string& element) {
+        if (element.empty()) {
+            return;
+        }
+
         counter++;
+
         std::string tag = nodeId + ":" + std::to_string(counter);
-        added.insert({element, tag});
+
+        added.insert(std::make_pair(element, tag));
     }
 
     void remove(const std::string& element) {
-        for (const auto& item : added) {
-            if (item.first == element) {
-                removed.insert(item);
+        if (element.empty()) {
+            return;
+        }
+
+        for (std::set<std::pair<std::string, std::string>>::const_iterator it = added.begin(); it != added.end(); ++it) {
+            if (it->first == element) {
+                removed.insert(*it);
             }
         }
     }
 
     std::set<std::string> query() const {
         std::set<std::string> result;
-        for (const auto& item : added) {
-            if (removed.find(item) == removed.end()) {
-                result.insert(item.first);
+
+        for (std::set<std::pair<std::string, std::string>>::const_iterator it = added.begin(); it != added.end(); ++it) {
+            if (removed.find(*it) == removed.end()) {
+                result.insert(it->first);
             }
         }
+
         return result;
     }
 
     void merge(const ORSet& other) {
-        for (const auto& item : other.added) {
-            added.insert(item);
-            processIncomingTag(item.second);
+        for (std::set<std::pair<std::string, std::string>>::const_iterator it = other.added.begin(); it != other.added.end(); ++it) {
+            added.insert(*it);
+            processIncomingTag(it->second);
         }
-        for (const auto& item : other.removed) {
-            removed.insert(item);
+
+        for (std::set<std::pair<std::string, std::string>>::const_iterator it = other.removed.begin(); it != other.removed.end(); ++it) {
+            removed.insert(*it);
         }
     }
 
     std::string serialize() const {
         std::stringstream ss;
+
         ss << nodeId << "\n";
         ss << counter << "\n";
+
         ss << added.size() << "\n";
-        for (const auto& item : added) {
-            ss << item.first << "|" << item.second << "\n";
+
+        for (std::set<std::pair<std::string, std::string>>::const_iterator it = added.begin(); it != added.end(); ++it) {
+            ss << it->first << "|" << it->second << "\n";
         }
+
         ss << removed.size() << "\n";
-        for (const auto& item : removed) {
-            ss << item.first << "|" << item.second << "\n";
+
+        for (std::set<std::pair<std::string, std::string>>::const_iterator it = removed.begin(); it != removed.end(); ++it) {
+            ss << it->first << "|" << it->second << "\n";
         }
+
         return ss.str();
     }
 
     static ORSet deserialize(const std::string& data) {
         std::stringstream ss(data);
-        std::string nodeId_line, counter_line, size_line;
-        
-        if (!std::getline(ss, nodeId_line)) return ORSet("");
-        if (!std::getline(ss, counter_line)) return ORSet(nodeId_line);
-        
-        ORSet obj(nodeId_line);
-        try {
-            obj.counter = std::stoi(counter_line);
-        } catch (...) { obj.counter = 0; }
 
-        if (std::getline(ss, size_line)) {
+        std::string nodeIdLine;
+        std::string counterLine;
+        std::string sizeLine;
+
+        if (!std::getline(ss, nodeIdLine)) {
+            return ORSet("");
+        }
+
+        ORSet obj(nodeIdLine);
+
+        if (std::getline(ss, counterLine)) {
+            try {
+                obj.counter = std::stoi(counterLine);
+            }
+            catch (...) {
+                obj.counter = 0;
+            }
+        }
+
+        if (std::getline(ss, sizeLine)) {
             int addedSize = 0;
-            try { addedSize = std::stoi(size_line); } catch (...) {}
+
+            try {
+                addedSize = std::stoi(sizeLine);
+            }
+            catch (...) {
+                addedSize = 0;
+            }
+
             for (int i = 0; i < addedSize; i++) {
                 std::string line;
-                if (!std::getline(ss, line)) break;
-                size_t sep = line.find("|");
-                if (sep != std::string::npos) {
-                    std::string element = line.substr(0, sep);
-                    std::string tag = line.substr(sep + 1);
-                    obj.added.insert({element, tag});
-                    obj.processIncomingTag(tag);
+
+                if (!std::getline(ss, line)) {
+                    break;
                 }
+
+                size_t sep = line.find("|");
+
+                if (sep == std::string::npos) {
+                    continue;
+                }
+
+                std::string element = line.substr(0, sep);
+                std::string tag = line.substr(sep + 1);
+
+                obj.added.insert(std::make_pair(element, tag));
+                obj.processIncomingTag(tag);
             }
         }
 
-        if (std::getline(ss, size_line)) {
+        if (std::getline(ss, sizeLine)) {
             int removedSize = 0;
-            try { removedSize = std::stoi(size_line); } catch (...) {}
+
+            try {
+                removedSize = std::stoi(sizeLine);
+            }
+            catch (...) {
+                removedSize = 0;
+            }
+
             for (int i = 0; i < removedSize; i++) {
                 std::string line;
-                if (!std::getline(ss, line)) break;
-                size_t sep = line.find("|");
-                if (sep != std::string::npos) {
-                    std::string element = line.substr(0, sep);
-                    std::string tag = line.substr(sep + 1);
-                    obj.removed.insert({element, tag});
+
+                if (!std::getline(ss, line)) {
+                    break;
                 }
+
+                size_t sep = line.find("|");
+
+                if (sep == std::string::npos) {
+                    continue;
+                }
+
+                std::string element = line.substr(0, sep);
+                std::string tag = line.substr(sep + 1);
+
+                obj.removed.insert(std::make_pair(element, tag));
             }
         }
+
         return obj;
     }
 
     void inspect() const {
-        std::set<std::string> res = query();
+        std::set<std::string> result = query();
+
         std::cout << "ORSet Node: " << nodeId << " { ";
-        for (const auto& e : res) std::cout << e << " ";
+
+        for (std::set<std::string>::const_iterator it = result.begin(); it != result.end(); ++it) {
+            std::cout << *it << " ";
+        }
+
         std::cout << "}\n";
     }
 };
