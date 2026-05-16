@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <string>
+#include <cstring>
+#include <cstdlib>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
@@ -23,6 +25,24 @@ std::string receiveResponse(SOCKET socket) {
 int main() {
     std::string host = "127.0.0.1";
     int port = 6001;
+
+    if (__argc >= 2) {
+        host = __argv[1];
+    }
+
+    if (__argc >= 3) {
+        port = std::atoi(__argv[2]);
+    }
+
+    if (__argc > 3) {
+        std::cout << "usage: crdtkv_cli [host] [port]\n";
+        return 1;
+    }
+
+    if (port <= 0 || port > 65535) {
+        std::cout << "ERROR invalid port\n";
+        return 1;
+    }
 
     WSADATA wsaData;
 

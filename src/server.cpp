@@ -4,6 +4,7 @@
 #include <string>
 #include <thread>
 #include <cstring>
+#include <cstdlib>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "command_handler.h"
@@ -63,6 +64,31 @@ void handleClient(SOCKET clientSocket, CommandHandler& handler) {
 int main() {
     std::string nodeId = "A";
     int port = 6001;
+
+    for (int i = 1; i < __argc; ++i) {
+        std::string arg = __argv[i];
+
+        if (arg == "--id" && i + 1 < __argc) {
+            nodeId = __argv[++i];
+        }
+        else if (arg == "--port" && i + 1 < __argc) {
+            port = std::atoi(__argv[++i]);
+        }
+        else {
+            std::cout << "usage: crdtkv [--id NODE_ID] [--port PORT]\n";
+            return 1;
+        }
+    }
+
+    if (nodeId.empty()) {
+        std::cout << "ERROR node id cannot be empty\n";
+        return 1;
+    }
+
+    if (port <= 0 || port > 65535) {
+        std::cout << "ERROR invalid port\n";
+        return 1;
+    }
 
     WSADATA wsaData;
 

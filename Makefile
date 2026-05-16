@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Isrc
 
-TEST_SOURCES = tests/test_gcounter.cpp tests/test_lww.cpp tests/test_orset.cpp tests/comprehensive_tests.cpp
+TEST_SOURCES = tests/test_gcounter.cpp tests/test_lww.cpp tests/test_orset.cpp tests/test_command_handler.cpp tests/comprehensive_tests.cpp
 TEST_EXECUTABLES = $(TEST_SOURCES:.cpp=)
 
 all: $(TEST_EXECUTABLES)

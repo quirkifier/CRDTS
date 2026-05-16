@@ -36,6 +36,26 @@ private:
         return oss.str();
     }
 
+    std::string setToLines(const std::set<std::string>& values) const {
+        if (values.empty()) {
+            return "(empty)";
+        }
+
+        std::ostringstream oss;
+        bool first = true;
+
+        for (const auto& value : values) {
+            if (!first) {
+                oss << "\n";
+            }
+
+            oss << value;
+            first = false;
+        }
+
+        return oss.str();
+    }
+
 public:
     KeyValueStore(const std::string& id) : nodeId(id) {}
 
@@ -171,7 +191,7 @@ public:
         }
 
         if (value.type == CRDTType::ORSET) {
-            return setToString(value.orset.query());
+            return setToLines(value.orset.query());
         }
 
         return "ERROR unknown CRDT type";
